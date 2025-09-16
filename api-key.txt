@@ -1,0 +1,3 @@
+# 罗翔法律知识顾问api-key
+API_KEY=sk-9c8db6647d8248c7aec9cd8d67732dab
+APP_ID=1bf4a3d9135f46d184163505fdb5b41d
