@@ -213,8 +213,8 @@ const ChatInterface: React.FC = () => {
             <div className="ai-avatar">
               <div className="avatar-icon">罗</div>
             </div>
-            <h2 className="ai-title">罗翔老师法律知识顾问</h2>
-            <p className="ai-description">我是一位专业的法律顾问，我可以解答你的一切法律问题，也可以和你探讨哲学问题。</p>
+            <h2 className="ai-title">罗老师法律知识顾问</h2>
+            <p className="ai-description">我是一位专业的法律顾问，也是一名刑法学教师，我可以解答你的一切法律问题，也可以和你探讨哲学问题。</p>
             
             <div className="preset-questions">
               {presetQuestions.map((question, index) => (
