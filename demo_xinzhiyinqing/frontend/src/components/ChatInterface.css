@@ -11,7 +11,6 @@
   margin: 20px;
 }
 
-
 .chat-messages {
   flex: 1;
   padding: 20px;
@@ -231,7 +230,6 @@
   align-items: center;
   gap: 8px;
 }
-
 
 .send-button {
   width: 36px;
@@ -557,15 +555,7 @@
   .chat-container {
     height: 100vh;
     border-radius: 0;
-  }
-  
-  .chat-header {
-    padding: 20px;
-    border-radius: 0;
-  }
-  
-  .chat-header h1 {
-    font-size: 24px;
+    margin: 0;
   }
   
   .message {
@@ -594,12 +584,10 @@
     gap: 6px;
   }
   
-  
   .send-button {
     width: 32px;
     height: 32px;
   }
-  
   
   .disclaimer {
     font-size: 11px;

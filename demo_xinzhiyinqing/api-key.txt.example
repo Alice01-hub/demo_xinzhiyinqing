@@ -1,0 +1,14 @@
+# API密钥配置文件示例
+# 请复制此文件为 api-key.txt 并填入您的真实密钥
+
+# 通义千问API密钥
+API_KEY=your_dashscope_api_key_here
+
+# 应用ID
+APP_ID=your_app_id_here
+
+# 使用说明：
+# 1. 将此文件复制为 api-key.txt
+# 2. 将 your_dashscope_api_key_here 替换为您的真实API密钥
+# 3. 将 your_app_id_here 替换为您的真实App ID
+# 4. 确保 api-key.txt 文件不会被提交到版本控制系统

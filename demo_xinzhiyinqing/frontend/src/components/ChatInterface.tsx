@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
+import { API_ENDPOINTS } from '../config/api';
 import './ChatInterface.css';
 
 interface Message {
@@ -11,87 +12,45 @@ interface Message {
   timestamp: Date;
 }
 
-interface ChatRequest {
-  message: string;
-  user_id: string;
+interface ChatInterfaceProps {
+  apiKey: string;
+  appId: string;
 }
 
-interface ChatResponse {
-  success: boolean;
-  message: string;
-  response: string;
-  request_id: string;
-}
-
-const ChatInterface: React.FC = () => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ apiKey, appId }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
   const [showWelcome, setShowWelcome] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   // 预设问题
   const presetQuestions = [
-    "我同事在微信群里说我偷东西，其实根本没有的事，现在大家都用异样眼光看我。我能告他吗？",
-    "我在街上看到一个老人摔倒，想扶又怕被讹，你说我该怎么办？",
-    "我不想卷了，打算辞职躺平，天天打游戏，靠父母养着。这违法吗？"
+    "什么是正当防卫？",
+    "合同违约的法律后果是什么？",
+    "如何申请劳动仲裁？",
+    "离婚财产如何分割？",
+    "交通事故责任如何认定？"
   ];
-  
+
   // 相关预设问题（在AI回复后显示）
   const contextualQuestions = [
     "如何收集证据？",
-    "诽谤罪的构成要件是什么？",
-    "起诉流程是怎样的？"
+    "起诉流程是怎样的？",
+    "需要准备哪些材料？"
   ];
-  
-  // 后端API地址
-  const API_BASE_URL = 'http://localhost:8000';
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // 调用后端API
-  const callBackendAPI = async (message: string): Promise<string> => {
-    try {
-      const requestData: ChatRequest = {
-        message: message,
-        user_id: 'web_user'
-      };
-
-      const response = await fetch(`${API_BASE_URL}/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: ChatResponse = await response.json();
-      
-      if (data.success) {
-        return data.response;
-      } else {
-        throw new Error(data.message || 'API调用失败');
-      }
-    } catch (error) {
-      console.error('API调用错误:', error);
-      return `抱歉，服务暂时不可用。错误信息：${error instanceof Error ? error.message : '未知错误'}`;
-    }
-  };
-
-  const handleSendMessage = async (customInput?: string) => {
+  const handleSubmit = async (customInput?: string) => {
     const messageText = customInput || inputText;
-    if (!messageText.trim()) return;
+    if (!messageText.trim() || isLoading) return;
 
     setShowWelcome(false); // 隐藏欢迎界面
 
@@ -103,28 +62,36 @@ const ChatInterface: React.FC = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setConversationHistory(prev => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);
 
     try {
-      // 调用后端API获取真实回复
-      const aiResponseText = await callBackendAPI(messageText);
-      
-      const aiResponse: Message = {
+      const response = await fetch(API_ENDPOINTS.CHAT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: messageText,
+          api_key: apiKey,
+          app_id: appId,
+        }),
+      });
+
+      const data = await response.json();
+
+      const aiMessage: Message = {
         id: Date.now() + 1,
-        text: aiResponseText,
+        text: data.success ? data.response : `错误: ${data.message}`,
         isUser: false,
         timestamp: new Date()
       };
-      
-      setMessages(prev => [...prev, aiResponse]);
-      setConversationHistory(prev => [...prev, aiResponse]);
+
+      setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      console.error('发送消息失败:', error);
       const errorMessage: Message = {
         id: Date.now() + 1,
-        text: '抱歉，发送消息时出现错误，请稍后重试。',
+        text: '网络连接失败，请检查后端服务是否正常运行',
         isUser: false,
         timestamp: new Date()
       };
@@ -134,18 +101,16 @@ const ChatInterface: React.FC = () => {
     }
   };
 
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      handleSubmit();
     }
   };
 
   // 重置对话功能
   const handleResetConversation = () => {
     setMessages([]);
-    setConversationHistory([]);
     setInputText('');
     setIsLoading(false);
     setShowWelcome(true);
@@ -155,13 +120,13 @@ const ChatInterface: React.FC = () => {
   const handlePresetQuestion = async (question: string) => {
     setShowWelcome(false);
     setInputText(question);
-    await handleSendMessage(question);
+    await handleSubmit(question);
   };
 
   // 处理相关预设问题点击
   const handleContextualQuestion = async (question: string) => {
     setInputText(question);
-    await handleSendMessage(question);
+    await handleSubmit(question);
   };
 
   // 重新生成消息
@@ -185,11 +150,23 @@ const ChatInterface: React.FC = () => {
       
       try {
         // 重新调用API
-        const aiResponseText = await callBackendAPI(userMessage.text);
+        const response = await fetch(API_ENDPOINTS.CHAT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: userMessage.text,
+            api_key: apiKey,
+            app_id: appId,
+          }),
+        });
+
+        const data = await response.json();
         
         const newAiResponse: Message = {
           id: Date.now(),
-          text: aiResponseText,
+          text: data.success ? data.response : `错误: ${data.message}`,
           isUser: false,
           timestamp: new Date()
         };
@@ -211,10 +188,10 @@ const ChatInterface: React.FC = () => {
         {showWelcome && (
           <div className="welcome-screen">
             <div className="ai-avatar">
-              <div className="avatar-icon">罗</div>
+              <div className="avatar-icon">法</div>
             </div>
-            <h2 className="ai-title">罗老师法律知识顾问</h2>
-            <p className="ai-description">我是一位专业的法律顾问，也是一名刑法学教师，我可以解答你的一切法律问题，也可以和你探讨哲学问题。</p>
+            <h2 className="ai-title">法律知识助手</h2>
+            <p className="ai-description">我是您的专业法律顾问，可以为您解答各种法律问题，提供准确的法律建议。</p>
             
             <div className="preset-questions">
               {presetQuestions.map((question, index) => (
@@ -223,7 +200,7 @@ const ChatInterface: React.FC = () => {
                   className="preset-question-btn"
                   onClick={() => handlePresetQuestion(question)}
                 >
-                  <span className="question-icon">💎</span>
+                  <span className="question-icon">⚖️</span>
                   <span className="question-text">{question}</span>
                   <span className="question-arrow">→</span>
                 </button>
@@ -320,7 +297,7 @@ const ChatInterface: React.FC = () => {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="遇事莫慌，罗老师在此"
+            placeholder="请输入您的法律问题..."
             className="chat-input"
             rows={1}
           />
@@ -357,7 +334,7 @@ const ChatInterface: React.FC = () => {
             
             <div className="footer-right">
               <button
-                onClick={() => handleSendMessage()}
+                onClick={() => handleSubmit()}
                 disabled={!inputText.trim() || isLoading}
                 className="send-button"
               >
